@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="SnapLearn — AI-powered Book Summarizer. Upload books and papers, get instant summaries, flashcards, quizzes and more." />
+  <meta name="theme-color" content="#07070f" />
+  <title>SnapLearn — AI Study Assistant</title>
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/index.css?v=2" />
+  <link rel="stylesheet" href="css/layout.css?v=2" />
+  <link rel="stylesheet" href="css/components.css?v=2" />
+  <link rel="stylesheet" href="css/flashcard.css?v=2" />
+  <link rel="stylesheet" href="css/quiz.css?v=2" />
+  <link rel="stylesheet" href="css/qa.css?v=2" />
+  <link rel="stylesheet" href="css/mobile.css?v=2" />
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- Mermaid.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <!-- html2pdf -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__header">
+      <div class="sidebar__logo">S</div>
+      <div>
+        <div class="sidebar__title">SnapLearn</div>
+        <div class="sidebar__subtitle">AI Study Assistant</div>
+      </div>
+    </div>
+
+    <div class="sidebar__content">
+      <button class="sidebar__upload-btn" id="sidebar-new-doc-btn">
+        <i data-lucide="plus-circle" style="width:16px;height:16px;"></i>
+        New Document
+      </button>
+
+      <div class="sidebar__section-title">Your Documents</div>
+      <ul class="sidebar__doc-list" id="doc-list"></ul>
+
+      <div id="no-docs-hint" class="empty-state" style="padding:var(--space-xl) 0;">
+        <div class="empty-state__icon" style="width:48px;height:48px;font-size:1.4rem;animation:none;">📄</div>
+        <div class="empty-state__text" style="font-size:var(--text-xs);margin-bottom:0;">Upload a file or paste text to get started</div>
+      </div>
+
+      <!-- Export Bundle -->
+      <div id="export-section" style="display:none;">
+        <div class="sidebar__section-title">Export Bundle</div>
+        <div style="display:flex;flex-direction:column;gap:var(--space-sm);">
+          <button class="btn btn--secondary btn--sm" id="btn-export-pdf" style="justify-content:flex-start;">
+            <i data-lucide="download" style="width:14px;height:14px;"></i> Study Guide (.pdf)
+          </button>
+          <button class="btn btn--secondary btn--sm" id="btn-export-csv" style="justify-content:flex-start;">
+            <i data-lucide="file-spreadsheet" style="width:14px;height:14px;"></i> Flashcards (.csv)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar__footer">
+      <div class="theme-toggle" id="theme-toggle">
+        <span style="display:flex;align-items:center;gap:6px;">
+          <i data-lucide="sun" style="width:14px;height:14px;"></i> Theme
+        </span>
+        <div class="theme-toggle__switch"></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <main class="main-content">
+
+    <!-- Desktop Tab Nav (hidden on mobile) -->
+    <nav class="tab-nav" id="tab-nav">
+      <div class="tab-nav__item active" data-tab="home"       id="tab-btn-home">
+        <i data-lucide="home"          style="width:14px;height:14px;"></i> Home
+      </div>
+      <div class="tab-nav__item"       data-tab="upload"      id="tab-btn-upload">
+        <i data-lucide="upload"        style="width:14px;height:14px;"></i> Upload
+      </div>
+      <div class="tab-nav__item"       data-tab="summary"     id="tab-btn-summary">
+        <i data-lucide="file-text"     style="width:14px;height:14px;"></i> Summary
+      </div>
+      <div class="tab-nav__item"       data-tab="keypoints"   id="tab-btn-keypoints">
+        <i data-lucide="list-checks"   style="width:14px;height:14px;"></i> Key Points
+      </div>
+      <div class="tab-nav__item"       data-tab="flashcards"  id="tab-btn-flashcards">
+        <i data-lucide="layers"        style="width:14px;height:14px;"></i> Flashcards
+      </div>
+      <div class="tab-nav__item"       data-tab="quiz"        id="tab-btn-quiz">
+        <i data-lucide="brain"         style="width:14px;height:14px;"></i> Quiz
+      </div>
+      <div class="tab-nav__item"       data-tab="qa"          id="tab-btn-qa">
+        <i data-lucide="help-circle"   style="width:14px;height:14px;"></i> Q&A
+      </div>
+      <div class="tab-nav__item"       data-tab="mindmap"     id="tab-btn-mindmap">
+        <i data-lucide="network"       style="width:14px;height:14px;"></i> Mind Map
+      </div>
+      <div class="tab-nav__item"       data-tab="chat"        id="tab-btn-chat">
+        <i data-lucide="message-square" style="width:14px;height:14px;"></i> Chat
+      </div>
+      <div class="tab-nav__doc-info" id="tab-doc-info"></div>
+    </nav>
+
+    <!-- ===== TAB PANELS ===== -->
+    <div class="tab-content">
+
+      <!-- ========== LANDING / HOME PANEL ========== -->
+      <section class="tab-panel active" id="panel-home">
+        <div id="landing-page">
+
+          <!-- Hero -->
+          <div class="landing-hero">
+            <div class="landing-hero__badge">
+              <i data-lucide="sparkles" style="width:12px;height:12px;"></i>
+              AI-Powered Study Assistant
+            </div>
+            <h1 class="landing-hero__title">Learn Smarter,<br>Not Harder</h1>
+            <p class="landing-hero__sub">
+              Upload any book, research paper, or article and let AI instantly generate summaries,
+              key points, flashcards, quizzes, and more — so you study what matters.
+            </p>
+            <div class="landing-hero__cta">
+              <button class="btn btn--primary btn--lg" id="landing-upload-btn">
+                <i data-lucide="upload" style="width:18px;height:18px;"></i> Get Started — Upload a Doc
+              </button>
+              <button class="btn btn--secondary btn--lg" id="landing-paste-btn">
+                <i data-lucide="clipboard" style="width:18px;height:18px;"></i> Paste Text
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="landing-stats">
+            <div class="landing-stat">
+              <div class="landing-stat__value">10x</div>
+              <div class="landing-stat__label">Faster Learning</div>
+            </div>
+            <div class="landing-stat">
+              <div class="landing-stat__value">7</div>
+              <div class="landing-stat__label">Study Tools</div>
+            </div>
+            <div class="landing-stat">
+              <div class="landing-stat__value">PDF + TXT</div>
+              <div class="landing-stat__label">File Support</div>
+            </div>
+            <div class="landing-stat">
+              <div class="landing-stat__value">YouTube</div>
+              <div class="landing-stat__label">Video Transcripts</div>
+            </div>
+          </div>
+
+          <!-- Features Grid -->
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-card__icon">📝</div>
+              <div class="feature-card__title">AI Summaries</div>
+              <p class="feature-card__desc">Get short, medium, or detailed summaries of any document — with adjustable length.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">🔑</div>
+              <div class="feature-card__title">Key Points</div>
+              <p class="feature-card__desc">Extract the most important takeaways with expandable detail explanations.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">🃏</div>
+              <div class="feature-card__title">Flashcards</div>
+              <p class="feature-card__desc">3D flip cards you can swipe through — perfect for memorizing key concepts on your phone.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">🧠</div>
+              <div class="feature-card__title">Quiz Mode</div>
+              <p class="feature-card__desc">Test your knowledge with AI-generated multiple-choice questions and instant feedback.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">🕸️</div>
+              <div class="feature-card__title">Mind Maps</div>
+              <p class="feature-card__desc">Visualize concept relationships with auto-generated interactive mind maps.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">💬</div>
+              <div class="feature-card__title">Chat with Doc</div>
+              <p class="feature-card__desc">Ask questions and get accurate answers grounded in your uploaded document.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">🔊</div>
+              <div class="feature-card__title">Listen Mode</div>
+              <p class="feature-card__desc">Have your summary read aloud — great for commuters and multitaskers.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-card__icon">📤</div>
+              <div class="feature-card__title">Export</div>
+              <p class="feature-card__desc">Download your study guide as Markdown or export flashcards as CSV for Anki.</p>
+            </div>
+          </div>
+
+          <!-- How it Works -->
+          <div class="how-it-works">
+            <h2 class="how-it-works__title">How It Works</h2>
+            <div class="steps-list">
+              <div class="step-item">
+                <div class="step-item__num">1</div>
+                <div class="step-item__content">
+                  <h4>Upload Your Content</h4>
+                  <p>Drop a PDF/TXT file, paste raw text, or enter a YouTube URL to fetch its transcript.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-item__num">2</div>
+                <div class="step-item__content">
+                  <h4>AI Processes It</h4>
+                  <p>Our Gemini-powered backend reads and understands your document in seconds.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-item__num">3</div>
+                <div class="step-item__content">
+                  <h4>Study with Smart Tools</h4>
+                  <p>Tap through the tabs — summary, flashcards, quiz, chat — and learn efficiently.</p>
+                </div>
+              </div>
+              <div class="step-item">
+                <div class="step-item__num">4</div>
+                <div class="step-item__content">
+                  <h4>Export &amp; Share</h4>
+                  <p>Download your generated study materials to review offline anytime.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- #landing-page -->
+      </section>
+
+      <!-- ========== UPLOAD PANEL ========== -->
+      <section class="tab-panel" id="panel-upload">
+        <div class="upload-hero">
+          <h1 class="upload-hero__title">Upload Your Content</h1>
+          <p class="upload-hero__sub">Drop a file, paste text, or add a YouTube link to start.</p>
+        </div>
+
+        <div class="upload-zone" id="upload-zone">
+          <input type="file" id="file-input" accept=".pdf,.txt" />
+          <div class="upload-zone__inner">
+            <div class="upload-zone__icon">📁</div>
+            <div class="upload-zone__title">Drop your PDF or TXT here</div>
+            <div class="upload-zone__subtitle">or tap to browse &nbsp;·&nbsp; Max 10 MB</div>
+          </div>
+        </div>
+
+        <div class="divider-or">or paste text</div>
+        <div class="input-group">
+          <label class="input-group__label" for="paste-text">Paste text content</label>
+          <textarea class="text-input-area" id="paste-text" placeholder="Paste the text from your book, article, or notes here…&#10;&#10;Minimum 50 characters required."></textarea>
+          <div class="input-group__hint" id="char-count">0 characters</div>
+        </div>
+
+        <div class="divider-or">or summarize YouTube video</div>
+        <div class="input-group">
+          <label class="input-group__label" for="youtube-url">YouTube Video URL</label>
+          <div style="display:flex;gap:var(--space-sm);">
+            <input type="text" class="text-input-area" id="youtube-url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              style="height:44px;min-height:unset;margin-bottom:0;" />
+            <button class="btn btn--secondary" id="btn-process-youtube" style="height:44px;flex-shrink:0;" title="Fetch transcript">
+              <i data-lucide="youtube" style="width:18px;height:18px;"></i>
+            </button>
+          </div>
+          <div class="input-group__hint">Fetches transcript automatically</div>
+        </div>
+
+        <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);flex-wrap:wrap;">
+          <button class="btn btn--primary btn--lg" id="btn-process-text" disabled>
+            <i data-lucide="sparkles" style="width:18px;height:18px;"></i> Process Text
+          </button>
+        </div>
+
+        <!-- Upload Progress -->
+        <div id="upload-progress" style="display:none;margin-top:var(--space-xl);">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-sm);">
+            <div class="spinner"></div>
+            <span id="upload-status" style="font-size:var(--text-sm);color:var(--text-secondary);font-weight:500;">Processing…</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-bar__fill" id="upload-bar" style="width:0%;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== SUMMARY PANEL ========== -->
+      <section class="tab-panel" id="panel-summary">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Summary</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
+            <div class="summary-toggle" id="summary-length-toggle">
+              <button class="summary-toggle__btn" data-length="short">Short</button>
+              <button class="summary-toggle__btn active" data-length="medium">Medium</button>
+              <button class="summary-toggle__btn" data-length="long">Detailed</button>
+            </div>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-summary-refresh" disabled title="Regenerate">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+            <button class="copy-btn" id="btn-copy-summary" style="display:none;">
+              <i data-lucide="copy" style="width:12px;height:12px;"></i> Copy
+            </button>
+            <div style="width:1px;height:20px;background:var(--border-primary);"></div>
+            <button class="btn btn--ghost btn--sm" id="btn-listen-summary" disabled title="Listen to summary">
+              <i data-lucide="play" style="width:14px;height:14px;"></i> Listen
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-stop-audio" style="display:none;">
+              <i data-lucide="square" style="width:14px;height:14px;"></i> Stop
+            </button>
+          </div>
+        </div>
+        <div id="summary-content">
+          <div class="empty-state">
+            <div class="empty-state__icon">✍️</div>
+            <div class="empty-state__title">No summary yet</div>
+            <div class="empty-state__text">Upload a document first, then generate a summary.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== KEY POINTS PANEL ========== -->
+      <section class="tab-panel" id="panel-keypoints">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Key Points</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <button class="btn btn--secondary btn--sm" id="btn-gen-keypoints" disabled>
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Generate
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-keypoints-refresh" disabled>
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+            <button class="copy-btn" id="btn-copy-keypoints" style="display:none;">
+              <i data-lucide="copy" style="width:12px;height:12px;"></i> Copy
+            </button>
+          </div>
+        </div>
+        <div id="keypoints-content">
+          <div class="empty-state">
+            <div class="empty-state__icon">🔑</div>
+            <div class="empty-state__title">No key points yet</div>
+            <div class="empty-state__text">Upload a document, then click Generate to extract key takeaways.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== FLASHCARDS PANEL ========== -->
+      <section class="tab-panel" id="panel-flashcards">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Flashcards</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <button class="btn btn--secondary btn--sm" id="btn-gen-flashcards" disabled>
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Generate
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-flashcards-refresh" disabled>
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+          </div>
+        </div>
+        <div id="flashcards-content">
+          <div class="empty-state">
+            <div class="empty-state__icon">🃏</div>
+            <div class="empty-state__title">No flashcards yet</div>
+            <div class="empty-state__text">Upload a document, then click Generate to create study flashcards.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== QUIZ PANEL ========== -->
+      <section class="tab-panel" id="panel-quiz">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Quiz</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <button class="btn btn--secondary btn--sm" id="btn-gen-quiz" disabled>
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Generate
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-quiz-refresh" disabled>
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+          </div>
+        </div>
+        <div id="quiz-content">
+          <div class="empty-state">
+            <div class="empty-state__icon">🧠</div>
+            <div class="empty-state__title">No quiz yet</div>
+            <div class="empty-state__text">Upload a document, then click Generate to create a quiz.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== Q&A PANEL ========== -->
+      <section class="tab-panel" id="panel-qa">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Study Q&A</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <button class="btn btn--secondary btn--sm" id="btn-gen-qa" disabled>
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Generate
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-qa-refresh" disabled>
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+          </div>
+        </div>
+        <div id="qa-content">
+          <div class="empty-state">
+            <div class="empty-state__icon">❓</div>
+            <div class="empty-state__title">No Q&A yet</div>
+            <div class="empty-state__text">Upload a document, then click Generate to create study questions and answers.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== MIND MAP PANEL ========== -->
+      <section class="tab-panel" id="panel-mindmap">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Mind Map</h2>
+          <div style="display:flex;align-items:center;gap:var(--space-sm);">
+            <button class="btn btn--secondary btn--sm" id="btn-gen-mindmap" disabled>
+              <i data-lucide="sparkles" style="width:14px;height:14px;"></i> Generate
+            </button>
+            <button class="btn btn--ghost btn--sm" id="btn-gen-mindmap-refresh" disabled>
+              <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Regenerate
+            </button>
+          </div>
+        </div>
+        <div id="mindmap-content" style="width:100%;overflow-x:auto;min-height:400px;display:flex;justify-content:center;align-items:center;background:var(--bg-secondary);border-radius:var(--radius-lg);border:1px solid var(--border-primary);">
+          <div class="empty-state">
+            <div class="empty-state__icon">🕸️</div>
+            <div class="empty-state__title">No mind map yet</div>
+            <div class="empty-state__text">Upload a document, then click Generate to visualize the concepts.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== CHAT PANEL ========== -->
+      <section class="tab-panel" id="panel-chat">
+        <div class="card__header" style="margin-bottom:var(--space-lg);">
+          <h2>Chat with Document</h2>
+          <button class="btn btn--ghost btn--sm" id="btn-clear-chat">
+            <i data-lucide="trash-2" style="width:14px;height:14px;"></i> Clear
+          </button>
+        </div>
+        <div class="chat-container" id="chat-container">
+          <div id="chat-messages" class="chat-messages">
+            <div class="empty-state">
+              <div class="empty-state__icon">💬</div>
+              <div class="empty-state__title">Start a conversation</div>
+              <div class="empty-state__text">Ask me anything about the document. I'll use the content to answer your questions.</div>
+            </div>
+          </div>
+          <div class="chat-input-wrapper">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask anything about the document…" rows="1"></textarea>
+            <button class="btn btn--primary btn--sm" id="btn-send-chat" disabled>
+              <i data-lucide="send" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- .tab-content -->
+  </main>
+</div><!-- .app-container -->
+
+<!-- ============ BOTTOM NAV (mobile) ============ -->
+<nav class="bottom-nav" id="bottom-nav">
+  <div class="bottom-nav__items">
+    <div class="bottom-nav__item active" data-tab="home" id="bnav-home">
+      <i data-lucide="home" style="width:22px;height:22px;"></i>
+      <span>Home</span>
+    </div>
+    <div class="bottom-nav__item" data-tab="summary" id="bnav-summary">
+      <i data-lucide="file-text" style="width:22px;height:22px;"></i>
+      <span>Summary</span>
+    </div>
+    <!-- FAB in center -->
+    <div class="bottom-nav__fab-slot">
+      <button class="fab" id="fab-upload" title="Upload new document">
+        <i data-lucide="plus" style="width:26px;height:26px;"></i>
+      </button>
+    </div>
+    <div class="bottom-nav__item" data-tab="flashcards" id="bnav-flashcards">
+      <i data-lucide="layers" style="width:22px;height:22px;"></i>
+      <span>Cards</span>
+    </div>
+    <div class="bottom-nav__item" data-tab="chat" id="bnav-chat">
+      <i data-lucide="message-square" style="width:22px;height:22px;"></i>
+      <span>Chat</span>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile sidebar toggle -->
+<button class="sidebar-toggle" id="sidebar-toggle" style="z-index: 9999 !important;">
+  <i data-lucide="menu" style="width:22px;height:22px;"></i>
+</button>
+
+<!-- Toast container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Scripts -->
+<script src="js/api.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+<script src="js/upload.js?v=3"></script>
+<script src="js/summary.js?v=3"></script>
+<script src="js/flashcards.js?v=3"></script>
+<script src="js/quiz.js?v=3"></script>
+<script src="js/qa.js?v=3"></script>
+<script src="js/mindmap.js?v=3"></script>
+<script src="js/chat.js?v=3"></script>
+<script src="js/mobile.js?v=3"></script>
+
+<script>
+  // Init Lucide icons
+  lucide.createIcons();
+
+  // Landing page CTA buttons
+  document.getElementById('landing-upload-btn').addEventListener('click', () => App.switchTab('upload'));
+  document.getElementById('landing-paste-btn').addEventListener('click', () => {
+    App.switchTab('upload');
+    setTimeout(() => document.getElementById('paste-text')?.focus(), 300);
+  });
+
+  // Sidebar "New Document" button
+  document.getElementById('sidebar-new-doc-btn').addEventListener('click', () => {
+    App.switchTab('upload');
+    document.getElementById('sidebar')?.classList.remove('open');
+  });
+
+  // FAB → upload tab
+  document.getElementById('fab-upload').addEventListener('click', () => App.switchTab('upload'));
+
+  // Copy summary button
+  document.getElementById('btn-copy-summary').addEventListener('click', function() {
+    const content = document.getElementById('summary-content').innerText;
+    if (content) {
+      navigator.clipboard.writeText(content).then(() => {
+        this.classList.add('copied');
+        this.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i> Copied!';
+        lucide.createIcons();
+        setTimeout(() => {
+          this.classList.remove('copied');
+          this.innerHTML = '<i data-lucide="copy" style="width:12px;height:12px;"></i> Copy';
+          lucide.createIcons();
+        }, 2000);
+      });
+    }
+  });
+
+  // Copy keypoints button
+  document.getElementById('btn-copy-keypoints').addEventListener('click', function() {
+    const content = document.getElementById('keypoints-content').innerText;
+    if (content) {
+      navigator.clipboard.writeText(content).then(() => {
+        this.classList.add('copied');
+        this.innerHTML = '<i data-lucide="check" style="width:12px;height:12px;"></i> Copied!';
+        lucide.createIcons();
+        setTimeout(() => {
+          this.classList.remove('copied');
+          this.innerHTML = '<i data-lucide="copy" style="width:12px;height:12px;"></i> Copy';
+          lucide.createIcons();
+        }, 2000);
+      });
+    }
+  });
+</script>
+</body>
+</html>
