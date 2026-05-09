@@ -11,7 +11,10 @@ FLASK_PORT = int(os.getenv("FLASK_PORT", 5000))
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", 10))
 MAX_CONTENT_LENGTH = MAX_FILE_SIZE_MB * 1024 * 1024  # bytes
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
+# Use DATA_DIR from environment for persistent storage (like Render Disks), default to current dir
+DATA_DIR = os.getenv("DATA_DIR", os.path.dirname(__file__))
+
+UPLOAD_FOLDER = os.path.join(DATA_DIR, "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"pdf", "txt"}

@@ -7,7 +7,7 @@ Also serves the frontend static files.
 import os
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from config import FLASK_PORT, MAX_CONTENT_LENGTH
+from config import FLASK_PORT, MAX_CONTENT_LENGTH, DATA_DIR
 from routes.upload import upload_bp
 from routes.generate import generate_bp
 from models import db
@@ -17,7 +17,7 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fr
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(os.path.dirname(__file__), "app.db")
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(DATA_DIR, "app.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize DB
