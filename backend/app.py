@@ -17,7 +17,14 @@ FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fr
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path="")
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(DATA_DIR, "app.db")
+# Database Configuration
+# Priority: DATABASE_URL (for Render/Production) > Local SQLite
+database_url = os.getenv("DATABASE_URL")
+if database_url and database_url.startswith("postgres://"):
+    # SQLAlchemy requires "postgresql://" instead of "postgres://"
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url or ("sqlite:///" + os.path.join(DATA_DIR, "app.db"))
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize DB

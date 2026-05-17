@@ -16,16 +16,31 @@ upload_bp = Blueprint("upload", __name__)
 
 def _extract_video_id(url):
     """Extract YouTube video ID from various URL formats."""
+    if not url:
+        return None
+    
+    # Handle short URLs
+    if "youtu.be/" in url:
+        # Extract the ID part before any query params or fragments
+        path = url.split("youtu.be/")[1]
+        return re.split(r"[?#]", path)[0]
+    
+    # Handle standard URLs
     patterns = [
-        r"(?:v=|\/)([0-9A-Za-z_-]{11}).*",
-        r"youtu\.be\/([0-9A-Za-z_-]{11})",
+        r"v=([0-9A-Za-z_-]{11})",
         r"embed\/([0-9A-Za-z_-]{11})",
+        r"\/v\/([0-9A-Za-z_-]{11})",
+        r"\/vi\/([0-9A-Za-z_-]{11})",
+        r"shorts\/([0-9A-Za-z_-]{11})",
     ]
     for pattern in patterns:
         match = re.search(pattern, url)
         if match:
             return match.group(1)
-    return None
+            
+    # Final fallback for any 11-char string that looks like an ID
+    id_match = re.search(r"([0-9A-Za-z_-]{11})", url)
+    return id_match.group(1) if id_match else None
 
 
 def allowed_file(filename):
@@ -140,74 +155,104 @@ def upload_text():
 def upload_youtube():
     """Handle YouTube video transcript extraction."""
     data = request.get_json()
-    
+
     if not data or "url" not in data:
         return jsonify({"error": "No YouTube URL provided"}), 400
-    
+
     url = data["url"].strip()
     video_id = _extract_video_id(url)
-    
+
     if not video_id:
         return jsonify({"error": "Invalid YouTube URL format."}), 400
-    
+
+    print(f"[YouTube] Processing URL: {url} (ID: {video_id})")
+
+    # v1.x API requires instantiation
+    ytt_api = YouTubeTranscriptApi()
+
     try:
-        # Instantiate the API
-        yt_api = YouTubeTranscriptApi()
-        
-        # Get the list of available transcripts
-        transcript_list = yt_api.list(video_id)
-        
-        # Try to find English or fallback to any available language
+        # Primary attempt: fetch English (or auto-detected) transcript
         try:
-            # Prefer English languages
-            transcript = transcript_list.find_transcript(['en', 'en-US', 'en-GB'])
-        except:
-            # If no English, just take the first available one in the list
-            transcript = next(iter(transcript_list))
-            
-        # Fetch the actual transcript data
-        data = transcript.fetch()
-        
-        # Extract text safely from snippets (handles both dicts and objects)
+            print(f"[YouTube] Attempting primary fetch for {video_id}...")
+            fetched = ytt_api.fetch(video_id, languages=["en", "en-US", "en-GB"])
+            segments = list(fetched)
+            print(f"[YouTube] Primary fetch succeeded for {video_id}")
+
+        except Exception as primary_err:
+            err_str = str(primary_err)
+            print(f"[YouTube] Primary fetch failed: {err_str[:200]}")
+
+            # Rate limiting
+            if "Too Many Requests" in err_str or "429" in err_str:
+                return jsonify({
+                    "error": "YouTube is rate-limiting this server. Please wait 10–15 minutes and try again."
+                }), 429
+
+            # Explicit no-transcript errors
+            if any(kw in err_str for kw in ["NoTranscriptFound", "TranscriptsDisabled", "No transcript found", "Transcripts are disabled"]):
+                return jsonify({"error": "Transcripts are disabled or unavailable for this video."}), 404
+
+            # Fallback: list all available transcripts and grab the first one
+            print(f"[YouTube] Trying fallback: listing all transcripts for {video_id}...")
+            try:
+                transcript_list = ytt_api.list(video_id)
+                first_transcript = next(iter(transcript_list))
+                fetched = first_transcript.fetch()
+                segments = list(fetched)
+                print(f"[YouTube] Fallback succeeded using: {first_transcript.language}")
+            except Exception as fallback_err:
+                fb_str = str(fallback_err)
+                if "Too Many Requests" in fb_str or "429" in fb_str:
+                    return jsonify({"error": "YouTube rate limit exceeded. Please try again later."}), 429
+                if "no element found" in fb_str or "ParseError" in fb_str:
+                    return jsonify({"error": "YouTube blocked the transcript request. Please try a different video."}), 403
+                return jsonify({"error": f"No transcript available: {fb_str}"}), 404
+
+        # Build text from transcript segments (v1.x uses FetchedTranscript objects)
         text_parts = []
-        for segment in data:
-            if isinstance(segment, dict):
-                text_parts.append(segment.get('text', ''))
+        for seg in segments:
+            # Segment may be a dict or a FetchedTranscriptSnippet object
+            if isinstance(seg, dict):
+                text_parts.append(seg.get("text", ""))
             else:
-                # Handle object-based snippets (FetchedTranscriptSnippet)
-                text_parts.append(getattr(segment, 'text', str(segment)))
-        
-        text = " ".join(text_parts)
-        
-        # Process text
+                text_parts.append(getattr(seg, "text", ""))
+
+        text = " ".join(text_parts).strip()
+
+        if not text:
+            return jsonify({"error": "The video transcript appears to be empty."}), 400
+
+        # Process & store
         text = clean_text(text)
         stats = get_text_stats(text)
-
-        
         doc_id = str(uuid.uuid4())
         title = f"YouTube Video ({video_id})"
-        
-        # Store in database
+
         new_doc = Document(
             id=doc_id,
             filename=title,
             text=text,
             metadata_json={"page_count": 0, "title": title, "author": "YouTube", "subject": "Video Transcript"},
-            stats=stats
+            stats=stats,
         )
         db.session.add(new_doc)
         db.session.commit()
-        
+
         return jsonify({
             "document_id": doc_id,
             "filename": title,
             "metadata": {"title": title},
             "stats": stats,
         }), 200
-        
+
     except Exception as e:
-        print(f"YouTube Error: {str(e)}")
-        return jsonify({"error": f"Failed to fetch transcript: {str(e)}"}), 500
+        error_str = str(e)
+        print(f"[YouTube] Unhandled error: {error_str}")
+        if "no element found" in error_str or "ParseError" in error_str:
+            return jsonify({"error": "YouTube blocked the transcript request. Please try a different video."}), 403
+        if "Too Many Requests" in error_str or "429" in error_str:
+            return jsonify({"error": "YouTube rate limit exceeded. Please try again later."}), 429
+        return jsonify({"error": f"Failed to fetch transcript: {error_str}"}), 500
 
 
 @upload_bp.route("/api/documents", methods=["GET"])
