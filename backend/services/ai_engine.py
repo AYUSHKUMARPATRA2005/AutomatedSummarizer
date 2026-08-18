@@ -10,7 +10,7 @@ from config import GEMINI_API_KEY, GEMINI_API_KEYS
 # Configure the Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
 
-MODEL_PRIORITY = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-pro-latest"]
+MODEL_PRIORITY = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-pro-latest"]
 
 # Global cache for document text to avoid repeated DB hits
 DOCUMENT_TEXT_CACHE = {}
