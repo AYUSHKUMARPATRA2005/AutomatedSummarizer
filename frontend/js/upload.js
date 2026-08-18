@@ -6,7 +6,6 @@ const Upload = (() => {
   function init() {
     _initFileDrop();
     _initTextPaste();
-    _initYouTube();
   }
 
   // ---- File Upload / Drag & Drop ----
@@ -122,49 +121,7 @@ const Upload = (() => {
     }
   }
 
-  // ---- YouTube ----
-  function _initYouTube() {
-    const btn = document.getElementById("btn-process-youtube");
-    const input = document.getElementById("youtube-url");
-    if (btn && input) {
-      btn.addEventListener("click", () => {
-        const url = input.value.trim();
-        if (!url) {
-          App.toast("Please enter a YouTube URL.", "error");
-          return;
-        }
-        _handleYouTube(url);
-      });
-      // Handle Enter key
-      input.addEventListener("keypress", (e) => {
-        if (e.key === "Enter") btn.click();
-      });
-    }
-  }
 
-  async function _handleYouTube(url) {
-    _showProgress("Fetching YouTube transcript…");
-    _animateBar(30);
-    try {
-      const result = await API.uploadYouTube(url);
-      _animateBar(100);
-      setTimeout(() => {
-        _hideProgress();
-        document.getElementById("youtube-url").value = "";
-        App.addDocument({
-          id: result.document_id,
-          filename: result.filename,
-          stats: result.stats,
-        });
-        App.toast("YouTube transcript fetched!");
-        App.switchTab("summary");
-        Summary.generate();
-      }, 400);
-    } catch (err) {
-      _hideProgress();
-      App.toast(err.message, "error");
-    }
-  }
 
   // ---- Progress UI ----
   function _showProgress(msg) {

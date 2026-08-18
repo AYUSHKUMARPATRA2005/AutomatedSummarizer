@@ -151,10 +151,6 @@
               <div class="landing-stat__value">PDF + TXT</div>
               <div class="landing-stat__label">File Support</div>
             </div>
-            <div class="landing-stat">
-              <div class="landing-stat__value">YouTube</div>
-              <div class="landing-stat__label">Video Transcripts</div>
-            </div>
           </div>
 
           <!-- Features Grid -->
@@ -209,7 +205,7 @@
                 <div class="step-item__num">1</div>
                 <div class="step-item__content">
                   <h4>Upload Your Content</h4>
-                  <p>Drop a PDF/TXT file, paste raw text, or enter a YouTube URL to fetch its transcript.</p>
+                  <p>Drop a PDF/TXT file, or paste raw text to get started.</p>
                 </div>
               </div>
               <div class="step-item">
@@ -243,7 +239,7 @@
       <section class="tab-panel" id="panel-upload">
         <div class="upload-hero">
           <h1 class="upload-hero__title">Upload Your Content</h1>
-          <p class="upload-hero__sub">Drop a file, paste text, or add a YouTube link to start.</p>
+          <p class="upload-hero__sub">Drop a file or paste text to start.</p>
         </div>
 
         <div class="upload-zone" id="upload-zone">
@@ -260,21 +256,6 @@
           <label class="input-group__label" for="paste-text">Paste text content</label>
           <textarea class="text-input-area" id="paste-text" placeholder="Paste the text from your book, article, or notes here…&#10;&#10;Minimum 50 characters required."></textarea>
           <div class="input-group__hint" id="char-count">0 characters</div>
-        </div>
-
-        <div class="divider-or">or summarize YouTube video</div>
-        <div class="input-group">
-          <label class="input-group__label" for="youtube-url">YouTube Video URL</label>
-          <div style="display:flex;gap:var(--space-sm);">
-            <input type="text" class="text-input-area" id="youtube-url"
-              placeholder="https://www.youtube.com/watch?v=..."
-              style="height:44px;min-height:unset;margin-bottom:0;" />
-            <button class="btn btn--secondary" id="btn-process-youtube" style="height:44px;flex-shrink:0;" title="Fetch transcript">
-              <i data-lucide="arrow-right" style="width:18px;height:18px;"></i>
-              <span>Fetch</span>
-            </button>
-          </div>
-          <div class="input-group__hint">Fetches transcript automatically</div>
         </div>
 
         <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);flex-wrap:wrap;">
